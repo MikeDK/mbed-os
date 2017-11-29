@@ -30,25 +30,47 @@ namespace mbed {
 
 class TRNG : private NonCopyable<TRNG> {
 public:
-    typedef std::vector<uint8_t> trng_byte_array_t;
-    typedef std::vector<uint16_t> trng_word_array_t;
-    typedef std::vector<uint32_t> trng_dword_array_t;
-    typedef std::vector<uint64_t> trng_qword_array_t;
-    
     TRNG();
     virtual ~TRNG();
     
-    operator uint8_t() const;
-    operator uint16_t() const;
-    operator uint32_t() const;
-    operator uint64_t() const;
-    
-    
-    
-    
+    template <typename T> operator T ()
+    {
+        T ret;
+        size_t output_length;
+        trng_get_bytes(&_trng, (uint8_t*)&ret, sizeof(ret), &output_length);
+        return ret;
+    }
+    operator bool()
+    {
+        uint8_t ret;
+        size_t output_length;
+        trng_get_bytes(&_trng, (uint8_t*)&ret, 1, &output_length);
+        return (ret % 2);
+    }
+    template <typename T> void GetVectorArray(std::vector<T> &array, const uint32_t& len)
+    {
+        T* buffer = (T*)NewRndBuf(len * sizeof(T));
+        array.clear();
+        for (uint32_t i = 0; i < len; ++i)
+        {
+            array.push_back(buffer[i]);
+        }
+        delete buffer;
+    }
+    template <typename T> void GetDataArray(T *array, const uint32_t& len)
+    {
+        size_t output_length;
+        trng_get_bytes(&_trng, (uint8_t*)array, len * sizeof(T), &output_length);
+    }
+
+    void GetString(std::string& str, const uint32_t& len);
+
 private:
-    trng_t _trng;
-    
+    uint8_t* NewRndBuf(const uint32_t& len);
+    void DeleteRndBuf(uint8_t* buf);
+
+    trng_t _trng;    
+    static const char _hexChars[16];
 };
     
     
